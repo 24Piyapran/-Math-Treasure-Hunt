@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Treasure Hunt: ตามล่าหาสมบัติ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .pop { animation: pop 0.5s ease-out; }
+        @keyframes pop {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="max-w-md w-full bg-slate-800 p-6 rounded-3xl shadow-2xl border border-slate-700">
+        <h1 class="text-2xl font-bold text-center mb-6 text-yellow-400">🏴‍☠️ Math Treasure Hunt</h1>
+        
+        <!-- ส่วนหน้าเริ่มเกม -->
+        <div id="start-screen" class="text-center">
+            <p class="mb-6 text-slate-300">ยินดีต้อนรับนักสำรวจ! ตอบโจทย์ให้ถูกเพื่อสะสมคะแนน และกดจบการผจญภัยเพื่อลุ้นสมบัติ!</p>
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105">เริ่มเดินทาง 🚀</button>
+        </div>
+
+        <!-- ส่วนเกมหลัก -->
+        <div id="game-screen" class="hidden fade-in">
+            <div class="flex justify-between mb-6 text-sm font-semibold text-slate-400">
+                <span id="level-indicator">ข้อที่: 1</span>
+                <span id="score-indicator">คะแนน: 0</span>
+            </div>
+            <div id="question-box" class="bg-slate-700/50 p-8 rounded-2xl mb-6 text-center border border-slate-600">
+                <h2 id="question-text" class="text-4xl font-bold mb-6 text-white">...</h2>
+                <div id="choices-container" class="grid grid-cols-2 gap-4"></div>
+            </div>
+            <p id="feedback" class="text-center font-bold h-8 text-yellow-400 mb-4"></p>
+            <button onclick="endGame()" class="w-full bg-red-600 hover:bg-red-500 py-2 rounded-xl font-bold transition-all text-sm">จบการผจญภัย 🏁</button>
+        </div>
+
+        <!-- ส่วนจบเกม -->
+        <div id="end-screen" class="hidden text-center fade-in">
+            <div class="text-8xl mb-4 pop">💎</div>
+            <h2 class="text-3xl font-bold mb-2 text-yellow-400">หีบสมบัติเปิดออกแล้ว!</h2>
+            <p id="congrats-msg" class="text-lg italic text-slate-300 mb-4 px-4"></p>
+            <p id="final-score" class="text-2xl font-bold mb-1"></p>
+            <p id="rank-title" class="text-2xl font-bold text-yellow-400 mb-8"></p>
+            <button onclick="location.reload()" class="w-full bg-green-600 hover:bg-green-500 py-3 rounded-xl font-bold transition-all">เริ่มผจญภัยครั้งใหม่</button>
+        </div>
+    </div>
+
+    <script>
+        let currentQuestion = {};
+        let score = 0;
+        let questionCount = 0;
+        let attempts = 0;
+
+        function generateMathQuestion() {
+            const a = Math.floor(Math.random() * 9) + 2;
+            const x = Math.floor(Math.random() * 10) + 1;
+            const b = Math.floor(Math.random() * 20) + 1;
+            const c = (a * x) + b;
+            const questionStr = `${a}x + ${b} = ${c}`;
+            const correct = x;
+            let options = [correct];
+            while(options.length < 4) {
+                let wrong = Math.floor(Math.random() * 20) + 1;
+                if(!options.includes(wrong)) options.push(wrong);
+            }
+            options.sort(() => Math.random() - 0.5);
+            return { q: questionStr, options: options, correct: options.indexOf(correct) };
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            questionCount++;
+            attempts = 0;
+            currentQuestion = generateMathQuestion();
+            document.getElementById('level-indicator').innerText = `ข้อที่: ${questionCount}`;
+            document.getElementById('question-text').innerText = currentQuestion.q;
+            const container = document.getElementById('choices-container');
+            container.innerHTML = '';
+            currentQuestion.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.innerText = opt;
+                btn.className = "bg-slate-600 hover:bg-slate-500 py-3 rounded-xl font-bold transition-all border border-slate-500 hover:border-blue-400";
+                btn.onclick = () => checkAnswer(idx, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(idx, btn) {
+            attempts++;
+            if (idx === currentQuestion.correct) {
+                const points = [10, 7, 5][attempts - 1] || 2;
+                score += points;
+                document.getElementById('score-indicator').innerText = `คะแนน: ${score}`;
+                document.getElementById('feedback').innerText = "✅ ถูกต้อง!";
+                btn.classList.add("bg-green-600");
+                setTimeout(nextQuestion, 800);
+            } else {
+                document.getElementById('feedback').innerText = "❌ ผิด! ลองใหม่";
+                document.getElementById('game-container').classList.add('shake');
+                setTimeout(() => document.getElementById('game-container').classList.remove('shake'), 500);
+            }
+        }
+
+        function endGame() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = `คะแนนรวม: ${score} คะแนน`;
+            
+            let rank = "นักเดินทางมือใหม่";
+            let msg = "พยายามได้ดี! ฝึกฝนอีกนิดจะเป็นนักล่าสมบัติที่ยิ่งใหญ่แน่นอน";
+            
+            if (score >= 90) {
+                rank = "Master Hunter 🥇";
+                msg = "ยอดเยี่ยมมาก! คุณคือสุดยอดอัจฉริยะแห่งเกาะคณิตศาสตร์ สมบัติทั้งหมดนี้เป็นของคุณแล้ว!";
+            } else if (score >= 70) {
+                rank = "Treasure Hunter 🥈";
+                msg = "สุดยอดไปเลย! คุณผ่านด่านหิน ๆ มาได้มากมาย สมบัติล้ำค่ารอคุณอยู่!";
+            } else if (score >= 60) {
+                rank = "Explorer 🥉";
+                msg = "คุณทำได้ดีมากครับนักสำรวจ! การผจญภัยครั้งนี้ทำให้คุณเก่งขึ้นอีกเยอะเลย";
+            }
+            
+            document.getElementById('rank-title').innerText = rank;
+            document.getElementById('congrats-msg').innerText = msg;
+        }
+    </script>
+</body>
+</html>
